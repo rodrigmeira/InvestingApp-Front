@@ -58,21 +58,17 @@ import {
 } from "@/components/ui/accordion";
 
 interface User {
+  userId: string;
   id: number;
   username: string;
   name: string;
   email: string;
-}
-
-interface UserStocks {
-  stockName: string;
-  quantity: number;
-  quote: number;
-  total: number;
+  creationTimestamp: Date;
+  updateTimestamp: Date;
 }
 
 interface UserData {
-  userStocks?: UserStocks[];
+  users: User[];
 }
 
 const Dashboard = () => {
@@ -85,8 +81,6 @@ const Dashboard = () => {
   const getAllUsers = async (user: any) => {
     try {
       const userId = user.userId;
-      console.log(`O id que está sendo enviado é: ${userId}`);
-
       const response = await axios.get(
         `http://localhost:8080/v1/users/${userId}`
       );
@@ -101,7 +95,7 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const response = await axios.get("http://localhost:8080/v1/users");
-        await getAllUsers(response.data[0]);
+      await getAllUsers(response.data[0]);
       if (response.status === 200) {
         setUsers(response.data);
       } else {
@@ -124,8 +118,7 @@ const Dashboard = () => {
     }
   };
 
-
-  const createUser = async (e: React.FormEvent<HTMLFormElement> ) => {
+  const createUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const nameInput = form.elements.namedItem("username") as HTMLInputElement;
@@ -154,15 +147,16 @@ const Dashboard = () => {
   };
 
   const updateUser = async (
-    id: number,
-    nameUser: string,
-    userEmail: string
+    userId: string,
+    username: string,
+    email: string
   ) => {
     try {
-      await axios.put(`http://localhost:8080/v1/users/${id}`, {
-        id,
-        nameUser,
-        userEmail,
+      console.log("Atualizando usuário:", { userId, username, email });
+      await axios.put(`http://localhost:8080/v1/users/${userId}`, {
+        userId,
+        username,
+        email,
       });
 
       getUser();
@@ -176,8 +170,9 @@ const Dashboard = () => {
     }
   };
 
-  const deleteUser = async (id: number) => {
+  const deleteUser = async (id: string) => {
     try {
+      console.log("este é o id para ser removido: ", id);
       await axios.delete(`http://localhost:8080/v1/users/${id}`);
       toast({
         title: "Usuário deletado com sucesso!",
@@ -284,8 +279,10 @@ const Dashboard = () => {
         </TableHeader>
         <TableBody>
           {users.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">{item.id}</TableCell>
+            <TableRow key={item.userId}>
+              <TableCell className="font-sm">
+                ...{item.userId.slice(-6)}
+              </TableCell>
               <TableCell>{item.username}</TableCell>
               <TableCell>{item.email}</TableCell>
               <TableCell>
@@ -304,63 +301,55 @@ const Dashboard = () => {
                         <DialogDescription></DialogDescription>
                       </DialogHeader>
                       <form className="max-w-screen overflow-y-auto max-h-[80vh] pl-4 pr-4">
-                        <div className="flex flex-col justify-start items-start gap-4 py-4 p-4">
-                          <div className="flex justify-between items-center gap-4 w-full">
-                            <div className="flex flex-col w-full gap-2">
-                              <Label htmlFor="name">Nome completo:</Label>
-                              <Input
-                                id="name"
-                                defaultValue={item.username}
-                                className="col-span-3"
-                              />
-                            </div>
-                            <div className="flex flex-col w-full gap-2">
-                              <Label htmlFor="email">E-mail:</Label>
-                              <Input
-                                id="email"
-                                defaultValue={item.email}
-                                className="col-span-3"
-                              />
-                            </div>
+                        <form className="max-w-screen overflow-y-auto max-h-[80vh] pl-4 pr-4">
+                          <div className="flex flex-col gap-4 pb-4 w-full">
+                            <Accordion type="single" collapsible>
+                              <AccordionItem value="item-1">
+                                <AccordionTrigger>
+                                  Visualize as informações do usuário
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="flex flex-col gap-2 py-2">
+                                    <Label>Nome:</Label>
+                                    <Input
+                                      value={item.username}
+                                      readOnly
+                                      className="bg-gray-100 cursor-not-allowed"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-2 py-2">
+                                    <Label>E-mail:</Label>
+                                    <Input
+                                      value={item.email}
+                                      readOnly
+                                      className="bg-gray-100 cursor-not-allowed"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-2 py-2">
+                                    <Label>Data de Criação:</Label>
+                                    <Input
+                                      value={new Date(
+                                        item.creationTimestamp
+                                      ).toLocaleDateString()}
+                                      readOnly
+                                      className="bg-gray-100 cursor-not-allowed"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-2 py-2">
+                                    <Label>Data de Atualização:</Label>
+                                    <Input
+                                      value={new Date(
+                                        item.updateTimestamp
+                                      ).toLocaleDateString()}
+                                      readOnly
+                                      className="bg-gray-100 cursor-not-allowed"
+                                    />
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
                           </div>
-                        </div>
-                        <div className="flex mb-10">
-                          <Accordion
-                            type="single"
-                            collapsible
-                            className="w-full"
-                          >
-                            <AccordionItem value="item-1">
-                              <AccordionTrigger className="font-bold">
-                                Mostrar ações
-                              </AccordionTrigger>
-                              <AccordionContent>
-                                <h5 className="font-semibold text-slate-950 mb-4 mt-2 antialiased text-base p-4">
-                                  Ações:
-                                </h5>
-                                <Table className="rounded">
-                                  <TableHeader>
-                                    <TableRow className="bg-[#95a140]/90 hover:bg-[#95a140]/90 rounded-lg">
-                                      <TableHead className="font-bold text-white">
-                                        Moeda
-                                      </TableHead>
-                                      <TableHead className="font-bold text-white">
-                                        Nome
-                                      </TableHead>
-                                      <TableHead className="font-bold text-white">
-                                        Quantidade
-                                      </TableHead>
-                                      <TableHead className="font-bold text-white">
-                                        Cotação
-                                      </TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody></TableBody>
-                                </Table>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                        </div>
+                        </form>
 
                         <DialogFooter>
                           <Button variant={"outline"}>Fechar</Button>
@@ -386,23 +375,42 @@ const Dashboard = () => {
                       </DialogHeader>
                       <form
                         onSubmit={(e) => {
+                          e.preventDefault();
                           const form = e.currentTarget;
-                          const nameUser = form.elements.namedItem(
-                            `nameUser-${item.id}`
+                          const usernameInput = form.querySelector(
+                            `#nameUser-${item.userId}`
                           ) as HTMLInputElement;
-                          const emailUser = form.elements.namedItem(
-                            `emailUser-${item.id}`
+                          const emailInput = form.querySelector(
+                            `#emailUser-${item.userId}`
                           ) as HTMLInputElement;
-                          updateUser(item.id, nameUser.value, emailUser.value)
+
+                          if (!usernameInput || !emailInput) {
+                            console.error(
+                              "Elementos de formulário não encontrados"
+                            );
+                            toast({
+                              title: "Erro",
+                              description:
+                                "Não foi possível encontrar os campos do formulário.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          updateUser(
+                            item.userId,
+                            usernameInput.value,
+                            emailInput.value
+                          )
                             .then(() => {
                               toast({
-                                title: "Usuário atualizado com sucesso!",
+                                title: "Usuário atualizado com sucesso!",
                                 variant: "default",
                               });
                             })
                             .catch((error) => {
                               console.error(
-                                "Erro ao atualizar usuário:",
+                                "Erro ao atualizar usuário:",
                                 error
                               );
                               toast({
@@ -419,17 +427,21 @@ const Dashboard = () => {
                         <div className="flex flex-col justify-start items-start gap-4 py-4 p-4">
                           <div className="flex justify-between items-center gap-4 w-full">
                             <div className="flex flex-col w-full gap-2">
-                              <Label htmlFor="name">Nome completo:</Label>
+                              <Label htmlFor={`nameUser-${item.userId}`}>
+                                Nome completo:
+                              </Label>
                               <Input
-                                id={`nameUser-${item.id}`}
+                                id={`nameUser-${item.userId}`}
                                 defaultValue={item.username}
                                 className="col-span-3"
                               />
                             </div>
                             <div className="flex flex-col w-full gap-2">
-                              <Label htmlFor="email">E-mail:</Label>
+                              <Label htmlFor={`emailUser-${item.userId}`}>
+                                E-mail:
+                              </Label>
                               <Input
-                                id={`emailUser-${item.id}`}
+                                id={`emailUser-${item.userId}`}
                                 defaultValue={item.email}
                                 className="col-span-3"
                               />
@@ -448,7 +460,11 @@ const Dashboard = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant={"destructive"} size="icon" className="text-white">
+                      <Button
+                        variant={"destructive"}
+                        size="icon"
+                        className="text-white"
+                      >
                         <Trash2 size={18} />
                       </Button>
                     </AlertDialogTrigger>
@@ -463,7 +479,7 @@ const Dashboard = () => {
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => {
-                            deleteUser(item.id);
+                            deleteUser(item.userId);
                           }}
                         >
                           Excluir
